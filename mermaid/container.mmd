@@ -1,0 +1,18 @@
+graph TD
+    subgraph Mobile
+        subgraph "React Native Mobile App"
+            RN_App_Container[React Native UI]
+        end
+    end
+
+    subgraph Server
+        Backend_API_Container[Backend API Server]
+        Database_Container[Database]
+    end
+
+    Third_Party_Container[Third-Party Services]
+
+    RN_App_Container -- "Uses REST/GraphQL" --> Backend_API_Container
+    RN_App_Container -- "Uses SDKs" --> Third_Party_Container
+    Backend_API_Container -- "Reads/Writes data" --> Database_Container
+    Backend_API_Container -- "Sends notifications to" --> Third_Party_Container

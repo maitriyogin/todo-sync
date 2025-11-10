@@ -1,0 +1,15 @@
+graph TD
+    subgraph "React Native Mobile App"
+        UI_Components[UI Components]
+        State_Management[State Management e.g., Redux]
+        API_Client[API Client]
+        Local_Storage[Local Storage]
+        Auth_Service[Authentication Service]
+
+        UI_Components -- "Dispatches actions" --> State_Management
+        State_Management -- "Fetches data" --> API_Client
+        API_Client -- "Sends requests to" --> Backend_API_Server[Backend API]
+        State_Management -- "Updates state from" --> API_Client
+        Auth_Service -- "Stores token in" --> Local_Storage
+        Auth_Service -- "Communicates with" --> API_Client
+    end

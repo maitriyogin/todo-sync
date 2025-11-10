@@ -1,0 +1,23 @@
+{
+  "name": "server",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "gen": "bun --node-env=prod --cjs src/server.ts",
+    "start": "bun --node-env=dev --watch --cjs src/server.ts",
+    "test": "cross-env NODE_ENV=test tap --node-arg=--require=bob-tsm"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "fastify": "^5.4.0",
+    "graphql": "^16.11.0",
+    "mercurius": "^16.2.0",
+    "mercurius-codegen": "^6.0.1"
+  }
+}

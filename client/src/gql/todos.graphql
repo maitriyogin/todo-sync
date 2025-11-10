@@ -1,0 +1,8 @@
+query TodosQuery {
+	todos {
+		completed
+		id
+		clientId
+		title
+	}
+}

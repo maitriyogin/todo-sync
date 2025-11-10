@@ -1,0 +1,17 @@
+graph TD
+    User((User))
+    Unify_OS[Unify OS]
+    BFF[BFF]
+    Boost[Boost]
+    Content[Content]
+    StudyConfig[StudyConfig]
+    Third_Party[Third-Party Services e.g., Push Notifications]
+
+        User -- "Uses" -->Unify_OS
+        Unify_OS -- "Makes API calls to" --> BFF
+        BFF -- "Receives data from" --> Third_Party
+        BFF -- "Fetches data from" --> Boost
+        BFF -- "Fetches data from" --> Content
+        BFF -- "Fetches data from" --> StudyConfig
+
+
