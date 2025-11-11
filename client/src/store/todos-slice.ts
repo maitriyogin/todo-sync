@@ -19,12 +19,16 @@ interface ITodo {
 interface TodosState {
 	todos: ITodo[];
 	loading: boolean;
+	lastFetched: number | null; // Timestamp when data was last fetched
+	ttl: number; // Time-to-live in milliseconds
 }
 
 // Define the initial state using that type
 const initialState: TodosState = {
 	loading: false,
 	todos: [],
+	lastFetched: null,
+	ttl: 30000, // Default: 30 seconds
 };
 
 export const todosSlice = createSlice({
@@ -83,6 +87,10 @@ export const todosSlice = createSlice({
 		fetchTodosSuccess: (state, action: PayloadAction<{ todos?: ITodo[] }>) => {
 			state.todos = action.payload.todos ?? [];
 			state.loading = false;
+			state.lastFetched = Date.now();
+		},
+		setTTL: (state, action: PayloadAction<number>) => {
+			state.ttl = action.payload;
 		},
 		toggleTodo: (state, action: PayloadAction<{ id: string }>) => {
 			const i = state.todos.findIndex((t) => t.id === action.payload.id);
@@ -100,7 +108,7 @@ export const todosSlice = createSlice({
 	},
 });
 
-export const { fetchTodosSuccess } = todosSlice.actions;
+export const { fetchTodosSuccess, setTTL } = todosSlice.actions;
 
 export const fetchTodos = (payload) =>
 	todosSlice.actions.fetchTodos({
@@ -110,7 +118,7 @@ export const fetchTodos = (payload) =>
 		success: { type: "todos/fetchTodosSuccess", payload: undefined },
 		variables: {},
 		query: TodosQueryDocument,
-		polling: payload?.polling, // Optional polling configuration: { interval: ms }
+		ttl: payload?.ttl, // Optional TTL in milliseconds
 	});
 
 export const toggleTodo = (payload) =>
@@ -154,6 +162,13 @@ export const removeTodo = (payload) =>
 
 // Other code such as selectors can use the imported `RootState` type
 export const selectTodos = (state: RootState) => state.todos;
+
+// Check if todos data is stale (TTL expired)
+export const selectIsTodosStale = (state: RootState) => {
+	const { lastFetched, ttl } = state.todos;
+	if (lastFetched === null) return true; // Never fetched
+	return Date.now() - lastFetched > ttl;
+};
 
 export const todosReducer = todosSlice.reducer;
 

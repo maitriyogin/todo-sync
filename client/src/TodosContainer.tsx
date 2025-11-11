@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useFetchTodos } from "./api/hooks/useFetchTodos";
+import type { Todo } from "./api/generated";
 import {
 	addTodo,
 	removeTodo,
@@ -9,9 +9,9 @@ import {
 } from "./store/todos-slice";
 
 export const TodosContainer = () => {
-	useFetchTodos(false, 3000);
-
+	// don't load data on a screen do this on app load
 	const { todos } = useSelector(selectTodos);
+
 	const dispatch = useDispatch();
 	const [newTodoTitle, setNewTodoTitle] = useState("");
 
@@ -23,7 +23,7 @@ export const TodosContainer = () => {
 		dispatch(removeTodo({ id, clientId }));
 	};
 
-	const handleAddTodo = (e) => {
+	const handleAddTodo = (e: Event) => {
 		e.preventDefault();
 		if (newTodoTitle.trim()) {
 			dispatch(
@@ -50,6 +50,15 @@ export const TodosContainer = () => {
 	);
 };
 
+export type TodosProps = {
+	todos: Todo[];
+	handleComplete: (id: string) => void;
+	handleRemove: (id: string, clientId: string) => void;
+	handleAddTodo: (e: Event) => void;
+	newTodoTitle: string;
+	setNewTodoTitle: (title: string) => void;
+};
+
 export const Todos = ({
 	todos,
 	handleComplete,
@@ -57,7 +66,7 @@ export const Todos = ({
 	handleAddTodo,
 	newTodoTitle,
 	setNewTodoTitle,
-}) => {
+}: TodosProps) => {
 	return (
 		<>
 			<h1>Todos</h1>

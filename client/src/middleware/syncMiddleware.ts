@@ -2,6 +2,7 @@ import { createListenerMiddleware, isAnyOf } from "@reduxjs/toolkit";
 import { syncService } from "../services/syncService";
 import { enqueue } from "../store/queueSlice.js";
 import { startSync, syncError, syncSuccess } from "../store/syncSlice.js";
+import { selectIsTodosStale, fetchTodos, setTTL } from "../store/todos-slice";
 
 const getMarkSyncedAction = (type: string, id: string) => ({
 	type: `${type.split("/")[0]}/markSynced`,
@@ -11,47 +12,9 @@ const getMarkSyncedAction = (type: string, id: string) => ({
 // Create the listener middleware instance
 export const syncListenerMiddleware = createListenerMiddleware();
 
-// Store active polling intervals
-const pollingIntervals = new Map<string, NodeJS.Timeout>();
-
-function startPolling(storeAPI, action) {
-	const { polling } = action.payload;
-	if (!polling || !polling.interval) return;
-
-	const pollKey = action.type;
-
-	// Clear existing interval if any
-	if (pollingIntervals.has(pollKey)) {
-		clearInterval(pollingIntervals.get(pollKey));
-	}
-
-	// Set up new polling interval
-	const intervalId = setInterval(() => {
-		// Re-dispatch the action without the polling flag to avoid infinite loops
-		const pollingAction = {
-			...action,
-			payload: {
-				...action.payload,
-				polling: undefined,
-			},
-		};
-		storeAPI.dispatch(pollingAction);
-	}, polling.interval);
-
-	pollingIntervals.set(pollKey, intervalId);
-}
-
-function stopPolling(actionType: string) {
-	if (pollingIntervals.has(actionType)) {
-		clearInterval(pollingIntervals.get(actionType));
-		pollingIntervals.delete(actionType);
-	}
-}
-
-// Export action creator to stop polling
-export const stopPollingAction = (actionType: string) => ({
-	type: "polling/stop",
-	payload: { actionType },
+// Action to check TTL and refetch if stale
+export const checkTodosStale = () => ({
+	type: "todos/checkStale",
 });
 
 async function sendOperation(dispatch, op, action) {
@@ -75,11 +38,19 @@ async function sendOperation(dispatch, op, action) {
 	}
 }
 
-// Listener 1: Handle stop polling actions
+// Listener 1: Handle TTL checks - refetch if data is stale
 syncListenerMiddleware.startListening({
-	type: "polling/stop",
+	type: "todos/checkStale",
 	effect: (action, listenerApi) => {
-		stopPolling(action.payload.actionType);
+		const state = listenerApi.getState();
+		const isStale = selectIsTodosStale(state);
+
+		if (isStale) {
+			console.log("[TTL] Todos data is stale, refetching...");
+			listenerApi.dispatch(fetchTodos({ loading: true }));
+		} else {
+			console.log("[TTL] Todos data is fresh");
+		}
 	},
 });
 
@@ -98,12 +69,9 @@ syncListenerMiddleware.startListening({
 		const state = listenerApi.getState();
 		const online = state.network.online;
 
-		// Handle polling if specified
-		if (action.payload.polling) {
-			startPolling(
-				{ dispatch: listenerApi.dispatch, getState: listenerApi.getState },
-				action,
-			);
+		// Handle TTL if specified - update the TTL value
+		if (action.payload.ttl !== undefined) {
+			listenerApi.dispatch(setTTL(action.payload.ttl));
 		}
 
 		// Build a small op to store in queue or send

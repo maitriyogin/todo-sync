@@ -1,26 +1,26 @@
 import { useEffect } from "react";
-import { useDispatch } from "react-redux";
-import { fetchTodos } from "../../store/todos-slice";
-import { stopPollingAction } from "../../middleware/syncMiddleware";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchTodos, selectIsTodosStale } from "../../store/todos-slice";
+import { checkTodosStale } from "../../middleware/syncMiddleware";
 
-export const useFetchTodos = (enablePolling = false, pollingInterval = 10000) => {
+export const useFetchTodos = (ttl?: number) => {
 	const dispatch = useDispatch();
+	const isStale = useSelector(selectIsTodosStale);
+
 	useEffect(() => {
-		// Fetch todos with optional polling
+		// Initial fetch with optional TTL
 		dispatch(
 			fetchTodos({
 				loading: true,
-				// Enable polling by passing: { interval: milliseconds }
-				// Disable by not passing the polling property
-				...(enablePolling && { polling: { interval: pollingInterval } }),
+				...(ttl && { ttl }), // Set custom TTL if provided
 			}),
 		);
+	}, [dispatch, ttl]);
 
-		// Cleanup: stop polling when component unmounts
-		return () => {
-			if (enablePolling) {
-				dispatch(stopPollingAction("todos/fetchTodos"));
-			}
-		};
-	}, [dispatch, enablePolling, pollingInterval]);
+	// Return function to check if data needs refresh
+	const checkAndRefresh = () => {
+		dispatch(checkTodosStale());
+	};
+
+	return { isStale, checkAndRefresh };
 };
